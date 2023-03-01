@@ -1,8 +1,10 @@
 const express = require("express");
 const { body, validationResult } = require("express-validator");
 const User = require("../models/User");
+const bcrypt = require("bcryptjs");
+const jwt = require('jsonwebtoken');
 const router = express.Router();
-
+const jwtSec="Jay Shree Ram";
 //create user using using post /api/auth/createUser
 router.post(
 	"/createUser",
@@ -22,23 +24,28 @@ router.post(
 			let user = await User.findOne({ email: req.body.email });
 			if (user) {
 				res.status(400).json({ error: "sorry email already exist" });
-			} //create a new user after checking
+			}
+			const salt = await bcrypt.genSalt(10);
+			const secPass = await bcrypt.hash(req.body.password, salt);
+			//create a new user after checking
 			user = await User.create({
 				name: req.body.name,
 				email: req.body.email,
-				password: req.body.password,
+				password: secPass,
 			});
-			res.json({ Done: "successfull" });
-		} catch {
+			const data={
+				user:{
+					id:user.id,
+				}
+			}
+			const authToken= jwt.sign(data, jwtSec);
+			//res.json(user);
+			res.json({authToken});
+		} catch(error) {
 			//if some strang happned
-			console.log("something error");
+			console.log("something error",error);
 			res.status(500).send("some Error occures");
 		}
-		// .then((user) => res.json(user))
-		// .catch((err) => {
-		// 	console.log(err);
-		// 	res.json({ error: "plz enter unique value" });
-		// });
 	}
 );
 module.exports = router;
