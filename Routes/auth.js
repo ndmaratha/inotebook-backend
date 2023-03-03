@@ -3,9 +3,10 @@ const { body, validationResult } = require("express-validator");
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const fetchUser = require("../Middleware/fetchUser");
 const router = express.Router();
 const jwtSec = "Jay Shree Ram";
-//create user using using post /api/auth/createUser
+//Route1:   create user using using post /api/auth/createUser
 router.post(
 	"/createUser",
 	[
@@ -49,7 +50,7 @@ router.post(
 	}
 );
 
-//authinticate user
+// Route 2: authinticate user /api/auth/login
 router.post(
 	"/login",
 	[
@@ -63,11 +64,11 @@ router.post(
 		}
 		const { email, password } = req.body;
 		try {
-			let user =await User.findOne({ email });
+			let user = await User.findOne({ email });
 			if (!user) {
 				return res.status(400).json("Please,Fill correct Information");
 			}
-			const passCompare =await bcrypt.compare(password, user.password);
+			const passCompare = await bcrypt.compare(password, user.password);
 			if (!passCompare) {
 				return res.status(400).json("Please,Fill correct Information");
 			}
@@ -84,6 +85,21 @@ router.post(
 			console.log("Internal error", error);
 			res.status(500).send("Internal  Error occures");
 		}
+		
 	}
 );
+
+//Route 3:
+//get logged in user details //Login Required
+router.post("/getUser", fetchUser, async (req, res) => {
+	try {
+		const userId = req.user.id;
+		const user = await User.findById(userId).select("-password");
+		res.send(user);
+	} catch (error) {
+		//if some strang happned
+		console.log("Internal error", error);
+		res.status(500).send("Internal  Error occures");
+	}
+});
 module.exports = router;
